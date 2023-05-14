@@ -47,6 +47,17 @@ def open_github_issue(token, user, repo):
     issue = repo.create_issue(title=title, body=descr, labels=[type])
     print(f"Created issue: {issue.html_url}")
 
+def close_github_issue(token, user, repo):
+    g = Github(token)
+    repo = g.get_user(user).get_repo(repo)
+    issues = repo.get_issues(state="open")
+    if issues.totalCount == 0:
+        print("No open issues to close")
+        return
+    random_issue = random.choice(list(issues))
+    random_issue.edit(state="closed")
+    print(f"Closed issue #{random_issue.number}: {random_issue.title}")
+
 ### Services ###
 # GitHub
 gh_token = "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"
@@ -71,4 +82,5 @@ impacts = ("Extensive", 0.1), ("Significant", 0.2), ("Moderate", 0.4), ("Minor",
 sprint_length = 4 # Normally this would be longer, but since we're limited in time.
 
 #print(lorem.get_sentences(2))
-open_github_issue(gh_token, gh_user, gh_oem_repo)
+close_github_issue(gh_token, gh_user, gh_oem_repo)
+close_github_issue(gh_token, gh_user, gh_am_repo)
