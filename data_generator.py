@@ -6,6 +6,7 @@ import requests
 import json
 from jira import JIRA
 from jira.resources import Issue
+import os
 
 
 def generate_title():
@@ -63,19 +64,24 @@ def close_github_issue(token, user, repo):
     random_issue.edit(state="closed")
     print(f"Closed issue #{random_issue.number}: {random_issue.title}")
 
-# TODO: find out why this is returning a 404???
-def github_test(token, user, repo, workflow_id):
-    url = f"https://api.github.com/repos/{user}/{repo}/actions/workflows/{workflow_id}/dispatches"
+def github_test(token: str, owner: str, repo: str, workflow_id: int):
+    url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
     headers = {
         "Accept": "application/vnd.github.v3+json",
-        "Authorization": f"Bearer {token}"
+        "Authorization": f"Bearer {token}",
     }
+
     data = {
-        "ref": "main"
+        "ref": "main",  # or the name of the branch you want to use
     }
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-    response.raise_for_status()
-    print(f"Workflow {workflow_id} triggered with ref {'main'}")
+
+    response = requests.post(url, headers=headers, json=data)
+
+    try:
+        response.raise_for_status()
+        print("Workflow dispatched successfully.")
+    except requests.exceptions.HTTPError as err:
+        print(f"Error: {err}")
 
 def jira_create_issue(token, user, key, domain):
     jira_issues = ("Epic", 0.1), ("Bug", 0.4), ("Story", 0.1), ("Task", 0.4)
@@ -100,34 +106,68 @@ def jira_create_issue(token, user, key, domain):
     new_issue = jira_connection.create_issue(fields=issue_dict)
     print(f"New issue created: {new_issue.key}")
 
+def jira_move_issue(token, user, key, domain):
+    jira = JIRA(
+    basic_auth=(user, token),
+    server=f"https://{domain}.atlassian.net"
+    )
+
+    # Get all issues for the project, pick one at random
+    issues = jira.search_issues(f'project={key}', maxResults=False)
+    if not issues:
+        print(f"No issues found for project {key}.")
+        return
+    issue = random.choice(issues)
+    
+    # Get the possible transitions for the issue
+    transitions = jira.transitions(issue)
+    if not transitions:
+        print(f"No transitions available for issue {issue.key}.")
+        return
+    
+    # Pick 1st available transition and do it
+    transition = transitions[0] 
+    jira.transition_issue(issue, transition['id'])
+    print(f"Issue {issue.key} has been moved to the next status.")
+
 ### Services ###
 # GitHub
-gh_token = "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"
+gh_token = os.getenv('GH_TOKEN')
 gh_user = "beige-sweatshirt"
 gh_am_repo = "AM_part"
 gh_oem_repo = "OEM_part"
-gh_testID_AM = "4971337606"
-gh_testID_OEM = 4971361635
+gh_testID_AM = 57184472
+gh_testID_OEM = 56996570
 
 # Jira
-jira_token = "ATATT3xFfGF0-FntKXJfWyO3V-lE1bdSIPPZomhHdAIs72IBofpait0KezLbLLo6wl7aJ4uyDE6hutL3AG6smIP_-Het9a_dDglUrzf6mmRXdAHI6YOSS7YO_89wLZHGURov-74-FvahTxx_BKOAIqCCnp_i5QQI7blJh_PRgHht9kg4qpsOY7w=47CF0519"
+jira_token = os.getenv('JIRA_TOKEN')
 jira_user = "mholford@protonmail.com"
 jira_project_key = "PART"
 jira_am_domain = "am-company"
 jira_oem_domain = "mholford"
 
-### Data ###
+# # NOTE: This script fires once every four hours. 
+if random.random() <= 0.33:
+    open_github_issue(gh_token, gh_user, gh_am_repo)
+if random.random() <= 0.33:
+    open_github_issue(gh_token, gh_user, gh_oem_repo)
+if random.random() <= 0.33:
+    jira_create_issue(jira_token, jira_user, jira_project_key, jira_am_domain)
+if random.random() <= 0.33:
+    jira_create_issue(jira_token, jira_user, jira_project_key, jira_oem_domain)
 
-# Jira
-jira_issues = ("Epic", 0.1), ("Bug", 0.4), ("Story", 0.1), ("Task", 0.4)
-reasons = ("Repair", 0.1), ("Upgrade",0.2), ("Maintenance",0.4), ("New Functionality",0.1), ("Other",0.1)
-risks = ("Critical", 0.1), ("High", 0.2), ("Medium", 0.4), ("Low", 0.2)
-impacts = ("Extensive", 0.1), ("Significant", 0.2), ("Moderate", 0.4), ("Minor", 0.2)
-sprint_length = 4 # Normally this would be longer, but since we're limited in time.
+# Moving existing issues
+if random.random() <= 0.20:
+    close_github_issue(gh_token, gh_user, gh_am_repo)
+if random.random() <= 0.20:
+    close_github_issue(gh_token, gh_user, gh_oem_repo)
+if random.random() <= 0.20:
+    jira_move_issue(jira_token, jira_user, jira_project_key, jira_am_domain)
+if random.random() <= 0.20:
+    jira_move_issue(jira_token, jira_user, jira_project_key, jira_oem_domain)
 
-#print(lorem.get_sentences(2))
-#close_github_issue(gh_token, gh_user, gh_oem_repo)
-# close_github_issue(gh_token, gh_user, gh_am_repo)
-# github_test(gh_token, gh_user, gh_oem_repo, gh_testID_OEM)
-# github_test(gh_token, gh_user, gh_am_repo, gh_testID_AM)
-jira_create_issue(jira_token, jira_user, jira_project_key, jira_am_domain)
+# Testing
+if random.random() <= 0.20:
+    github_test(gh_token, gh_user, gh_oem_repo, gh_testID_OEM)
+if random.random() <= 0.20:
+    github_test(gh_token, gh_user, gh_am_repo, gh_testID_AM)
