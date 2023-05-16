@@ -94,13 +94,17 @@ def jira_create_issue(token, user, key, domain):
     server=f"https://{domain}.atlassian.net"
     )
 
+    story_pts = generate_story_pts(4)
+
     issue_dict = {
         'project': {'key': key},
         'summary': generate_title(),
         'description': generate_description(),
-        'customfield_10006': {'value': weighted_str(risks)},
-        'customfield_10004': {'value': weighted_str(impacts)},
+        'customfield_10006': {'value': weighted_str(risks)},   # Risks
+        'customfield_10004': {'value': weighted_str(impacts)}, # Impacts
         'issuetype': {'name': weighted_str(jira_issues)},
+        'customfield_10016': story_pts,                        # Story Point Estimate
+        'duedate': generate_duedate(story_pts)
     }
 
     new_issue = jira_connection.create_issue(fields=issue_dict)
@@ -112,23 +116,24 @@ def jira_move_issue(token, user, key, domain):
     server=f"https://{domain}.atlassian.net"
     )
 
-    # Get all issues for the project, pick one at random
+    # Get all issues for the project, shuffle and iterate until one with transitions is found
     issues = jira.search_issues(f'project={key}', maxResults=False)
     if not issues:
         print(f"No issues found for project {key}.")
         return
-    issue = random.choice(issues)
     
-    # Get the possible transitions for the issue
-    transitions = jira.transitions(issue)
-    if not transitions:
-        print(f"No transitions available for issue {issue.key}.")
-        return
-    
-    # Pick 1st available transition and do it
-    transition = transitions[0] 
-    jira.transition_issue(issue, transition['id'])
-    print(f"Issue {issue.key} has been moved to the next status.")
+    random.shuffle(issues)
+    for issue in issues:
+        # Get the possible transitions for the issue
+        transitions = jira.transitions(issue)
+        if transitions:
+            # Pick 1st available transition and do it
+            transition = transitions[0] 
+            jira.transition_issue(issue, transition['id'])
+            print(f"Issue {issue.key} has been moved to the next status.")
+            return
+
+    print(f"No transitions available for any issue in project {key}.")
 
 ### Services ###
 # GitHub
@@ -150,24 +155,24 @@ jira_oem_domain = "mholford"
 if random.random() <= 0.33:
     open_github_issue(gh_token, gh_user, gh_am_repo)
 if random.random() <= 0.33:
-    open_github_issue(gh_token, gh_user, gh_oem_repo)
+   open_github_issue(gh_token, gh_user, gh_oem_repo)
 if random.random() <= 0.33:
     jira_create_issue(jira_token, jira_user, jira_project_key, jira_am_domain)
 if random.random() <= 0.33:
-    jira_create_issue(jira_token, jira_user, jira_project_key, jira_oem_domain)
+   jira_create_issue(jira_token, jira_user, jira_project_key, jira_oem_domain)
 
 # Moving existing issues
-if random.random() <= 0.20:
+if random.random() <= 0.33:
     close_github_issue(gh_token, gh_user, gh_am_repo)
-if random.random() <= 0.20:
-    close_github_issue(gh_token, gh_user, gh_oem_repo)
-if random.random() <= 0.20:
+if random.random() <= 0.33:
+   close_github_issue(gh_token, gh_user, gh_oem_repo)
+if random.random() <= 0.33:
     jira_move_issue(jira_token, jira_user, jira_project_key, jira_am_domain)
-if random.random() <= 0.20:
+if random.random() <= 0.33:
     jira_move_issue(jira_token, jira_user, jira_project_key, jira_oem_domain)
 
 # Testing
 if random.random() <= 0.20:
-    github_test(gh_token, gh_user, gh_oem_repo, gh_testID_OEM)
+   github_test(gh_token, gh_user, gh_oem_repo, gh_testID_OEM)
 if random.random() <= 0.20:
-    github_test(gh_token, gh_user, gh_am_repo, gh_testID_AM)
+   github_test(gh_token, gh_user, gh_am_repo, gh_testID_AM)
