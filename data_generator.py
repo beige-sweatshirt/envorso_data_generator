@@ -7,6 +7,7 @@ import json
 from jira import JIRA
 from jira.resources import Issue
 import os
+import math
 
 
 def generate_title():
@@ -34,7 +35,7 @@ def weighted_str(tuple_list):
             return string
 
 def generate_story_pts(longest_spring):
-    return random.integer(1,longest_spring+1)
+    return math.ceil(random.uniform(1,longest_spring+1))
 
 def generate_duedate(story_pts):
     today = date.today()
@@ -72,7 +73,7 @@ def github_test(token: str, owner: str, repo: str, workflow_id: int):
     }
 
     data = {
-        "ref": "main",  # or the name of the branch you want to use
+        "ref": "main", 
     }
 
     response = requests.post(url, headers=headers, json=data)
@@ -155,11 +156,11 @@ jira_oem_domain = "mholford"
 if random.random() <= 0.33:
     open_github_issue(gh_token, gh_user, gh_am_repo)
 if random.random() <= 0.33:
-   open_github_issue(gh_token, gh_user, gh_oem_repo)
+    open_github_issue(gh_token, gh_user, gh_oem_repo)
 if random.random() <= 0.33:
     jira_create_issue(jira_token, jira_user, jira_project_key, jira_am_domain)
 if random.random() <= 0.33:
-   jira_create_issue(jira_token, jira_user, jira_project_key, jira_oem_domain)
+    jira_create_issue(jira_token, jira_user, jira_project_key, jira_oem_domain)
 
 # Moving existing issues
 if random.random() <= 0.33:
