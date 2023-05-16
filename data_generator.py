@@ -34,7 +34,7 @@ def weighted_str(tuple_list):
             return string
 
 def generate_story_pts(longest_spring):
-    return random.uniform(1,longest_spring+1)
+    return random.integer(1,longest_spring+1)
 
 def generate_duedate(story_pts):
     today = date.today()
