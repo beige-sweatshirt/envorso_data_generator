@@ -1,9 +1,10 @@
 name: Run data_generator.py
 
 on:
-  schedule:
+  # schedule:
     # Runs every 4 hours
-    - cron: '0 */4 * * *'
+    # cron: '0 */4 * * *'
+    workflow_dispatch:
 
 jobs:
   build:
